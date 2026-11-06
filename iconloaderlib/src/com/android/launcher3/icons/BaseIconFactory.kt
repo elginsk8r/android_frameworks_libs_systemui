@@ -176,9 +176,13 @@ constructor(
                     InsetDrawable(icon, inset, inset, inset, inset),
                 )
         }
-        if (options.wrapNonAdaptiveIcon) tempIcon = wrapToAdaptiveIcon(tempIcon, options)
+        // Icons that are not adaptive keep their own shape if the factory asks for it
+        val keepShape = tempIcon !is AdaptiveIconDrawable && !shouldWrapNonAdaptiveIcons()
+        if (options.wrapNonAdaptiveIcon && !keepShape) {
+            tempIcon = wrapToAdaptiveIcon(tempIcon, options)
+        }
 
-        val drawFullBleed = options.drawFullBleed ?: drawFullBleedIcons
+        val drawFullBleed = if (keepShape) false else options.drawFullBleed ?: drawFullBleedIcons
         val bitmap = drawableToBitmap(tempIcon, drawFullBleed, options)
         icon.bounds = oldBounds
 
@@ -220,6 +224,13 @@ constructor(
 
         return info
     }
+
+    /**
+     * Whether icons that are not adaptive are wrapped into an adaptive icon, shaped like the
+     * adaptive icons. Otherwise they are drawn in their own shape, like icon packs intend their
+     * icons to be.
+     */
+    protected open fun shouldWrapNonAdaptiveIcons(): Boolean = true
 
     fun getBitmapFlagOp(options: IconOptions?): FlagOp {
         if (options == null) return FlagOp.NO_OP
